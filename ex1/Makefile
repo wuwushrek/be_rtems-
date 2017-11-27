@@ -28,7 +28,7 @@ OBJS= $(COBJS) $(CXXOBJS) $(ASOBJS)
 all:    ${ARCH} $(PGM)
 
 $(PGM): $(OBJS)
-	$(make-exe)
+	$(make-exe) 
 
 run: all
 	tsim-leon3 ${ARCH}/$(EXEC)
