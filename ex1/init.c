@@ -77,6 +77,7 @@ rtems_task The_Task(unsigned int Task_num){
     exit(1);
   } 
   while (1){ /* RMS  loop */ 
+    // Wait and check if deadline is missed
     if (rtems_rate_monotonic_period(RMS_Id,Periods[Task_num]) == RTEMS_TIMEOUT){
       printf("Task %d, TIMEOUT \n",Task_num);
       break;
@@ -96,8 +97,11 @@ rtems_task The_Task(unsigned int Task_num){
     printf("rtems_rate_monotonic_delete failed with status of %d. \n", Status);
     exit(1);
   }
-  // printf("End of JOB %d \n",(Task_num));
-  rtems_rate_monotonic_report_statistics(); 
+
+  // rtems rate monotonic statistics
+  rtems_rate_monotonic_report_statistics();
+
+  // Tell the main task that this one terminated 
   Done[Task_num] = 1;
   rtems_task_suspend(RTEMS_SELF);
   rtems_task_delete(RTEMS_SELF); 
@@ -110,13 +114,11 @@ rtems_task The_Task(unsigned int Task_num){
 rtems_task Init( rtems_task_argument ignored ){ 
   rtems_status_code    status; 
   rtems_task_priority  the_priority; 
-  // rtems_id             id; 
   rtems_time_of_day    time; 
   rtems_mode           Previous_Mode; 
   rtems_interval       ticks_per_second; 
 
   int j;  
-  // char Char_Name; 
   int Main_Done; 
 	
   /* Clock value */ 
@@ -131,7 +133,6 @@ rtems_task Init( rtems_task_argument ignored ){
   status = rtems_clock_set( &time );  
   
   printf ("main-- starting\n"); 
-
 
   rtems_clock_get(RTEMS_CLOCK_GET_TICKS_PER_SECOND, &ticks_per_second); 
   printf("main-- ticks_per_second : %d\n", (int)ticks_per_second); 
@@ -174,6 +175,9 @@ rtems_task Init( rtems_task_argument ignored ){
   status = rtems_task_set_priority(RTEMS_SELF, 50, &the_priority);
   printf("main-- current priority : %d, set to 50\n", (int)the_priority);
   
+  /* Wait until all the task terminated their job before shutting down
+   * the main task
+   */
   while(1){
     Main_Done = 1;
     for (j=0 ; j< MAX_TASKS; j++){
@@ -184,14 +188,15 @@ rtems_task Init( rtems_task_argument ignored ){
     if (Main_Done == 1) break;
   }
 
+  /* Resume and delete the created tasks */
   for (j = 0; j < MAX_TASKS; j++){
     printf("main-- Periods done for task %d : %d\n", j+1, Periods_Done[j+1]);
     status = rtems_task_resume(Task_id[j+1]);
   }
-
   for (j = 0; j < MAX_TASKS; j++)
     rtems_task_delete(Task_id[j+1]);
   
+  /* Exit main task and do cpu usage report */
   printf("main-- exiting\n");
   rtems_cpu_usage_report();
   rtems_task_delete(RTEMS_SELF);
