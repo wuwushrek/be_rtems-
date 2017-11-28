@@ -41,7 +41,7 @@ rtems_task Task_3(unsigned int argument);
  * tsim-leon3.  
  * Note: this requires optimization level of -O0 wih gcc
  */
-#define TEMPO 0x000fff
+#define TEMPO 0x0fffff
 #define WASTE_CPU for (i =0 ; i < TEMPO; i++)
 
 /******************************************************************************/
