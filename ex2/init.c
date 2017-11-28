@@ -54,6 +54,7 @@ rtems_id            Task_id[9]        = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 rtems_name          Semaphore_name[2] = { 0, 0};
 rtems_id            Semaphore_id[2]   = { 0, 0};
 unsigned char       Task_done[9]      = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+unsigned char       notify_task       = 0;
 
 #define RMS_WORKLOAD 32000
 
@@ -87,7 +88,8 @@ rtems_task Task_1( unsigned int waste_time_tick) {
     printf("main-- rtems_task_mode failed\n");
 
   /* Wait until T3 is in his critical section by Trying to acquire SM2 */
-  rtems_semaphore_obtain(Semaphore_id[1],RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+  //rtems_semaphore_obtain(Semaphore_id[1],RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+  while (notify_task == 0) rtems_task_wake_after(100);
   printf("T3 -> T1 && ! P(T1,SM1)\n");
   /* Try to acquire SM1 */
   rtems_semaphore_obtain(Semaphore_id[0],RTEMS_WAIT,RTEMS_NO_TIMEOUT);
@@ -127,7 +129,8 @@ rtems_task Task_2( unsigned int waste_time_tick) {
     printf("main-- rtems_task_mode failed\n");
 
   /* Wait until T3 is in his critical section by Trying to acquire SM2 */
-  status = rtems_semaphore_obtain(Semaphore_id[1],RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+  //status = rtems_semaphore_obtain(Semaphore_id[1],RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+  while (notify_task == 0) rtems_task_wake_after(100);
   printf("T3 -> T2 \n");
   /* Waste some time */
   WASTE_CPU;
@@ -162,8 +165,9 @@ rtems_task Task_3( unsigned int waste_time_tick) {
   rtems_semaphore_obtain(Semaphore_id[0],RTEMS_WAIT,RTEMS_NO_TIMEOUT);
   printf("P(T3,SM1)\n");
   /* Notify T1 and T2 that we are in the critical section */
-  rtems_semaphore_release(Semaphore_id[1]);
-  rtems_semaphore_release(Semaphore_id[1]);
+  //rtems_semaphore_release(Semaphore_id[1]);
+  //rtems_semaphore_release(Semaphore_id[1]);
+  notify_task = 1;
   /* Waste some time */
   WASTE_CPU;
   printf("! V(T3,SM1)\n");
@@ -217,9 +221,9 @@ rtems_task Init( rtems_task_argument argument)
   printf("Semaphore (0) creation status code : %d \n", (int) status);
 
   /* Create semaphores SM2 easy achievement of precedence constraints */
-  Semaphore_name[1] = rtems_build_name('S', 'M', '1',' ');
-  status = rtems_semaphore_create(Semaphore_name[1], 0 ,RTEMS_DEFAULT_ATTRIBUTES, Task_Priority[1],&Semaphore_id[1]);
-  printf("Semaphore (%d) creation status code : %d \n", 1 ,(int) status);
+  //Semaphore_name[1] = rtems_build_name('S', 'M', '1',' ');
+  //status = rtems_semaphore_create(Semaphore_name[1], 0 ,RTEMS_DEFAULT_ATTRIBUTES, Task_Priority[1],&Semaphore_id[1]);
+  //printf("Semaphore (%d) creation status code : %d \n", 1 ,(int) status);
 
   /* Tasks initialization */
   for ( j=0 ; j<MAX_TASKS; j++){
@@ -262,7 +266,7 @@ rtems_task Init( rtems_task_argument argument)
 
   /* Poper delete of the two Semaphore */
   rtems_semaphore_delete(Semaphore_id[0]);
-  rtems_semaphore_delete(Semaphore_id[1]);
+  //rtems_semaphore_delete(Semaphore_id[1]);
 
   /* This will print when other tasks are finished */
   status = rtems_task_set_priority
@@ -272,7 +276,6 @@ rtems_task Init( rtems_task_argument argument)
   printf("main (init) : exit\n");
 
   //Report the CPU usage
-  rtems_cpu_usage_reset();
   rtems_cpu_usage_report();
 
   rtems_task_delete(RTEMS_SELF);
