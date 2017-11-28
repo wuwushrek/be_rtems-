@@ -191,6 +191,7 @@ rtems_task Init( rtems_task_argument ignored ){
 
   for (j = 0; j < MAX_TASKS; j++)
     rtems_task_delete(Task_id[j+1]);
+  
   printf("main-- exiting\n");
   rtems_cpu_usage_report();
   rtems_task_delete(RTEMS_SELF);
