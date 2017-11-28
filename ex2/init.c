@@ -41,7 +41,7 @@ rtems_task Task_3(unsigned int argument);
  * tsim-leon3.  
  * Note: this requires optimization level of -O0 wih gcc
  */
-#define TEMPO 0xffffff
+#define TEMPO 0x000fff
 #define WASTE_CPU for (i =0 ; i < TEMPO; i++)
 
 /******************************************************************************/
@@ -217,7 +217,7 @@ rtems_task Init( rtems_task_argument argument)
   //RTEMS_DEFAULT_ATTRIBUTES | RTEMS_BINARY_SEMAPHORE 
   //RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | RTEMS_PRIORITY_CEILING | RTEMS_LOCAL
   Semaphore_name[0] = rtems_build_name( 'S', 'M', '0', ' ' );
-  status = rtems_semaphore_create(Semaphore_name[0], 1 ,RTEMS_DEFAULT_ATTRIBUTES | RTEMS_BINARY_SEMAPHORE,Task_Priority[1] , &Semaphore_id[0]);
+  status = rtems_semaphore_create(Semaphore_name[0], 1 ,RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | RTEMS_PRIORITY_CEILING | RTEMS_LOCAL,Task_Priority[1] , &Semaphore_id[0]);
   printf("Semaphore (0) creation status code : %d \n", (int) status);
 
   /* Create semaphores SM2 easy achievement of precedence constraints */
@@ -233,9 +233,9 @@ rtems_task Init( rtems_task_argument argument)
   }
 
   /* Tasks launching */
-  rtems_task_start(Task_id[1], (rtems_task_entry) Task_1, 200);
-  rtems_task_start(Task_id[2], (rtems_task_entry) Task_2, 200);
-  rtems_task_start(Task_id[3], (rtems_task_entry) Task_3, 200);
+  rtems_task_start(Task_id[1], (rtems_task_entry) Task_1, 10);
+  rtems_task_start(Task_id[2], (rtems_task_entry) Task_2, 10);
+  rtems_task_start(Task_id[3], (rtems_task_entry) Task_3, 10);
   
   /* Set preemption */
   status = rtems_task_mode(RTEMS_PREEMPT, RTEMS_PREEMPT_MASK, &Previous_Mode); 
