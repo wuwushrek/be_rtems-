@@ -214,18 +214,18 @@ rtems_task Init( rtems_task_argument argument)
   //RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | RTEMS_PRIORITY_CEILING | RTEMS_LOCAL
   Semaphore_name[0] = rtems_build_name( 'S', 'M', '0', ' ' );
   status = rtems_semaphore_create(Semaphore_name[0], 1 ,RTEMS_DEFAULT_ATTRIBUTES | RTEMS_BINARY_SEMAPHORE,Task_Priority[1] , &Semaphore_id[0]);
-  printf("Semaphore (0) creation status code : %s \n", rtems_status_text(status));
+  printf("Semaphore (0) creation status code : %d \n", (int) status);
 
   /* Create semaphores SM2 easy achievement of precedence constraints */
   Semaphore_name[1] = rtems_build_name('S', 'M', '1',' ');
   status = rtems_semaphore_create(Semaphore_name[1], 0 ,RTEMS_DEFAULT_ATTRIBUTES, Task_Priority[1],&Semaphore_id[1]);
-  printf("Semaphore (%d) creation status code : %s \n", 1 ,rtems_status_text(status));
+  printf("Semaphore (%d) creation status code : %d \n", 1 ,(int) status);
 
   /* Tasks initialization */
   for ( j=0 ; j<MAX_TASKS; j++){
     Task_name[j+1] = rtems_build_name('T', 'A', 'S', '0'+(j+1));
     status = rtems_task_create(Task_name[j+1],Task_Priority[j+1],RTEMS_MINIMUM_STACK_SIZE,RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES,&Task_id[j+1]); 
-    printf("main-- Task nb. %d created, status = %s, priority = %d, id=%x\n",j+1,rtems_status_text(status), (int) Task_Priority[j+1], (int) Task_id[j+1]);    
+    printf("main-- Task nb. %d created, status = %d, priority = %d, id=%x\n",j+1,(int) status, (int) Task_Priority[j+1], (int) Task_id[j+1]);    
   }
 
   /* Tasks launching */
