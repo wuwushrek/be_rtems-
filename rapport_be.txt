@@ -1,0 +1,28 @@
+*******************************************************************************
+****************	Rapport BE d'introduction à RTEMS	***********************
+*******************************************************************************
+
+*******************************************************************************
+Exercice 1 : Around the RTEMS API											  *
+*******************************************************************************
+
+Le but de cet exercice est de manipuler l'API de RTEMS. Il s'agissait notamment de manipuler les méthodes de création,suspension et redemarrage de taches, de création de taches periodiques, de suppression de taches et enfin de gestion des priorités des taches.
+
+Pour répondre aux questions de l'exercice, on a commencé dans la méthode 'init' à attribuer une haute priorité à la tache principale, puis on a crée 5 taches ( priorité moins importantes que celle de la tache principal) en utilisant la méthode rtems_task_create (notez que le stack size à utiliser doit etre bien choisi pour permettre la création de toutes les taches) et enfin on les a demarré grace à la methode rtems_task_start. Puis il était question de changer la priorité de la tache principale pour permettre aux autres d'avoir la main et enfin attendre la terminaison des 5 taches avant de terminer la tache principal. Le job de chaque  tache était d'executer de manière periodique (rtems_rate_monotonic) un nombre de periode fixé avec comme contrainte de s'arreter si une deadline a été manquée par le rate_monotonic.
+
+En faisant la simulation, on observe que pour certains choix de periode (c'est le cas des periodes données avec le code du BE) pour ces threads, les deadlines ne seront pas respectées et donc les threads en question n'auront pas le bon nombre de periode à la fin de la simulation. On peut aussi constater que le nombre de periode executée croit avec la priorité attribué à la tache. Ce résultat est logique vu que la préemption d'une tache est basée sur la priorité de la tache.
+
+
+*******************************************************************************
+Exercice 2 : Priority inversion and PCP										  *
+*******************************************************************************
+
+Le but de cet exercice est d'illustrer le problème d'inversion de priorité sur un scenario classique et enfin de corriger ce problème en utilisant des protocoles à priorité plafond.
+
+Le scenario met en œuvre trois tâches de priorités différentes. La tâche 1 (de plus forte priorité) et la tâche 3 (de plus faible priorité) peuvent toutes les deux accéder à une ressource partagée, protégée par le mutex SM1. Une troisième tâche 3 a une priorité intermédiaire entre celles de 1 et de 2. De plus pour illustrer cette inversion de priorité, on a des contraintes de prédecences entre les taches. Notamment, les taches T1 et T2 doivent se reveiller après que T3 est rentrée dans sa section critique (*contrairement à ce qui est marqué dans l'enoncé où T2 doit se reveiller après que T1 est dans sa section critique* -> Ce scenario ne permettrait pas d'observer le phénomène d'inversion de priorité). Pour satisfaire ces contraintes de précedences, on a utilisé une deuxième semaphore SM2 initialisée à 0 dont le nombre de jeton maximal est de 2. Après leur demarrage, Les taches T1 et T2 vont attendre d'acquerir chacune un jeton de SM2, ces 2 jetons seront liberés au moment où T3 rentrera dans sa section critique.
+
+* Simulation avec SM1 utilisant le protocole par defaut FIFO:
+Dans cette situation, en analysant les retours de la simulation, on voit que T1 (haute priorité) se lance mais se met dans l'attente que T3 rentre dans sa section critique et le reveille. ensuite T2 (priorité moyenne) se lance mais se met dans l'attente que T3 rentre dans sa section critique et le reveille. Enfin T3 se reveille, recupère SM1 et rentre dans sa section critique, puis reveille T1 qui préempte T3 mais reste bloqué en attente de SM1 ce qui redonne la main à T3. T3 reveille ainsi T2 qui préempte T3 et exécute toute sa tache avant de refiler la main à T3 qui reussit à sortir de sa section critique mais est préempté par T1 lorsqu'il libère SM1. T1 finit d'executer sa tache puis refile la main à T3 qui se termine. On observe là qu'il y a une inversion de priorité vu que T1 a du attendre que T2 se termine et que T3 rende la main avant de pouvoir effectuer sa tache. Ceci étant inadmissible vu que T1 a la plus haute priorité.
+
+* Simulation avec SM1 utilisant le protocole PCP
+Dans cette situation, on a utilisé comme attribut lors de la création de la semaphore le paramètre suivant : 'RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | RTEMS_PRIORITY_CEILING | RTEMS_LOCAL' avec la priorité de T1 comme la priorité de plafond. Ici, on voit que T1 (haute priorité) se lance mais se met dans l'attente que T3 rentre dans sa section critique et le reveille. ensuite T2 (priorité moyenne) se lance mais se met dans l'attente que T3 rentre dans sa section critique et le reveille. Enfin T3 se reveille, recupère SM1 et rentre dans sa section critique, puis reveille T1 qui préempte T3 mais reste bloqué en attente de SM1 ce qui redonne la main à T3 tout en lui donnant une nouvelle priorité qui sera celle de T1. T3 reveille ainsi T2 qui ne peut pas préempter T3 et donc T3 exécute sa section critique puis libère SM1 en recuperant sa priorité initiale. Ainsi T1 reprend la main et termine l'execution de sa tache puis file la main à T2 qui se termine avant d'enfin refiler la main à T3 pour qu'il termine lui aussi sa tache. On observe là qu'il n'y a une inversion de priorité vu qu'au final T1 s'est terminée, puis T2 et enfin T3.
